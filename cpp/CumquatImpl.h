@@ -1,17 +1,9 @@
 #pragma once
 
-#include <CumquatSpecJSI.h>
-
-#include <memory>
+#include "bridge/NativeCumquatModule.h"
 
 namespace facebook::react {
 
-class CumquatImpl
-  : public NativeCumquatCxxSpec<CumquatImpl> {
-public:
-  CumquatImpl(std::shared_ptr<CallInvoker> jsInvoker);
+using CumquatImpl = NativeCumquatModule;
 
-  double multiply(jsi::Runtime& rt, double a, double b);
-};
-
-}
+} // namespace facebook::react

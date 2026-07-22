@@ -1,12 +1,12 @@
 {
   "name": "react-native-cumquat",
   "version": "0.1.0",
-  "description": "AR engine TurboModule",
+  "description": "Stateful C++ spatial projection engine for React Native AR applications",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
     ".": {
-      "react-native-cumquat-source": "./src/index.tsx",
+      "react-native-cumquat-source": "./src/index.ts",
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
     },
@@ -20,6 +20,8 @@
     "cpp",
     "*.podspec",
     "react-native.config.js",
+    "README.md",
+    "LICENSE",
     "!ios/build",
     "!android/build",
     "!android/gradle",
@@ -38,10 +40,16 @@
     "typecheck": "tsc",
     "release": "release-it --only-version",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
-    "test": "jest"
+    "test": "jest",
+    "pack:check": "yarn prepare && npm pack --dry-run"
   },
   "keywords": [
     "react-native",
+    "turbo-module",
+    "c++",
+    "ar",
+    "geospatial",
+    "projection",
     "ios",
     "android"
   ],
@@ -56,7 +64,13 @@
   },
   "homepage": "https://github.com/ydrea/react-native-cumquat#readme",
   "publishConfig": {
+    "access": "public",
+    "provenance": true,
     "registry": "https://registry.npmjs.org/"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^21.0.2",
@@ -87,8 +101,8 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "react": "*",
-    "react-native": "*"
+    "react": ">=19",
+    "react-native": ">=0.85"
   },
   "workspaces": [
     "example"
