@@ -101,8 +101,8 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "react": ">=19",
-    "react-native": ">=0.85"
+    "react": "*",
+    "react-native": "*"
   },
   "workspaces": [
     "example"
