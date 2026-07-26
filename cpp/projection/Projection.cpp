@@ -6,7 +6,6 @@
 namespace cumquat::projection {
 namespace {
 constexpr double kPi = 3.14159265358979323846;
-constexpr double kDebugViewportMarginPixels = 200.0;
 
 inline double radians(double degrees) {
   return degrees * kPi / 180.0;
@@ -33,11 +32,23 @@ Vec3 rotateByQuaternion(const Vec3& vector, const Quaternion& source) {
       vector.z + qw * tz + (qx * ty - qy * tx),
   };
 }
+
+Quaternion worldToCameraOrientation(
+    const Quaternion& deviceOrientation) {
+  return {
+      -deviceOrientation.x,
+      -deviceOrientation.y,
+      -deviceOrientation.z,
+      deviceOrientation.w,
+  };
+}
 } // namespace
 
 Vec3 worldToCamera(const Vec3& enu, const SensorState& sensorState) {
   if (sensorState.hasOrientationQuaternion) {
-    return rotateByQuaternion(enu, sensorState.orientation);
+    return rotateByQuaternion(
+        enu,
+        worldToCameraOrientation(sensorState.orientation));
   }
 
   const double heading = radians(sensorState.headingDeg);
@@ -81,31 +92,24 @@ bool projectToScreen(
   if (width <= 0.0 || height <= 0.0) return false;
 
   if (sensorState.hasOrientationQuaternion) {
-    depth = camera.length();
-    if (depth <= 0.1) {
+    const double forwardDepth = -camera.z;
+    depth = forwardDepth;
+
+    if (forwardDepth <= 0.1) {
       x = width * 0.5;
       y = height * 0.5;
       return false;
     }
 
-    const double horizontalFocal =
+    const double focal =
         width / (2.0 * std::tan(radians(viewState.horizontalFovDeg) * 0.5));
-    const double aspect = width / height;
-    const double verticalFovDeg = viewState.horizontalFovDeg / aspect;
-    const double verticalFocal =
-        height / (2.0 * std::tan(radians(verticalFovDeg) * 0.5));
+    const double cameraRight = -camera.y;
+    const double cameraUp = -camera.x;
 
-    const double correctedX = -camera.y;
-    const double correctedY = -camera.x;
-    x = width * 0.5 + correctedX * horizontalFocal / depth;
-    y = height * 0.5 - correctedY * verticalFocal / depth;
+    x = width * 0.5 + cameraRight * focal / forwardDepth;
+    y = height * 0.5 - cameraUp * focal / forwardDepth;
 
-    if (camera.z > 0.0) return false;
-
-    return x >= -kDebugViewportMarginPixels &&
-        x <= width + kDebugViewportMarginPixels &&
-        y >= -kDebugViewportMarginPixels &&
-        y <= height + kDebugViewportMarginPixels;
+    return x >= 0.0 && x <= width && y >= 0.0 && y <= height;
   }
 
   const double focal =
