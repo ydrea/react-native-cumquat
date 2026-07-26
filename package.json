@@ -41,6 +41,7 @@
     "release": "release-it --only-version",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "test": "jest",
+    "test:native": "cmake -S . -B build/native-tests -DCMAKE_BUILD_TYPE=Release && cmake --build build/native-tests && ctest --test-dir build/native-tests --output-on-failure",
     "pack:check": "yarn prepare && npm pack --dry-run"
   },
   "keywords": [
