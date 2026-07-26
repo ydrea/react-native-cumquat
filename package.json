@@ -41,7 +41,7 @@
     "release": "release-it --only-version",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "test": "jest",
-    "test:native": "cmake -S . -B build/native-tests -DCMAKE_BUILD_TYPE=Release && cmake --build build/native-tests && ctest --test-dir build/native-tests --output-on-failure",
+    "test:native": "cmake -S . -B node_modules/.cache/cumquat-native-tests -DCMAKE_BUILD_TYPE=Release && cmake --build node_modules/.cache/cumquat-native-tests && ctest --test-dir node_modules/.cache/cumquat-native-tests --output-on-failure",
     "pack:check": "yarn prepare && npm pack --dry-run"
   },
   "keywords": [
@@ -91,9 +91,6 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-ft-flow": "^3.0.11",
     "eslint-plugin-prettier": "^5.5.6",
-    "jest": "^29.7.0",
-    "lefthook": "^2.1.9",
-    "prettier": "^3.8.3",
     "react": "19.2.3",
     "react-native": "0.85.0",
     "react-native-builder-bob": "^0.43.0",
