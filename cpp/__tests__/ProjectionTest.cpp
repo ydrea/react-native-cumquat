@@ -52,7 +52,7 @@ ViewState ninetyDegreeView() {
   return view;
 }
 
-void testDeviceYawIsInvertedForWorldToCameraRotation() {
+void testPreparedWorldToCameraQuaternionIsAppliedDirectly() {
   constexpr double halfSqrtTwo = 0.70710678118654752440;
   SensorState sensor = quaternionSensor();
   sensor.orientation = Quaternion{
@@ -68,8 +68,8 @@ void testDeviceYawIsInvertedForWorldToCameraRotation() {
   expectNear(camera.x, 0.0, "90-degree device yaw should remove camera X");
   expectNear(
       camera.y,
-      -1.0,
-      "positive device yaw must rotate the world vector in the inverse direction");
+      1.0,
+      "prepared world-to-camera quaternion must not be conjugated again");
   expectNear(camera.z, 0.0, "yaw should preserve camera Z");
 }
 
@@ -146,6 +146,23 @@ void testBehindCameraIsRejected() {
   expectNear(depth, -10.0, "behind-camera point should have negative depth");
 }
 
+void testBehindCameraRetainsDirectionalCoordinates() {
+  const SensorState sensor = quaternionSensor();
+  const ViewState view = ninetyDegreeView();
+  double x = 0.0;
+  double y = 0.0;
+  double depth = 0.0;
+
+  expectFalse(
+      cumquat::projection::projectToScreen(
+          Vec3{0.0, -5.0, 10.0}, sensor, view, x, y, depth),
+      "behind-camera point must not be visible");
+  expectTrue(
+      x > sensor.viewportWidth * 0.5,
+      "behind-camera point must retain a rightward edge direction");
+  expectNear(y, 50.0, "behind-camera horizontal direction should stay centered");
+}
+
 void testStrictViewportBoundsRejectOverscan() {
   const SensorState sensor = quaternionSensor();
   const ViewState view = ninetyDegreeView();
@@ -178,11 +195,12 @@ void testVerticalProjectionUsesSquarePixelFocalLength() {
 } // namespace
 
 int main() {
-  testDeviceYawIsInvertedForWorldToCameraRotation();
+  testPreparedWorldToCameraQuaternionIsAppliedDirectly();
   testIdentityQuaternionPreservesWorldVector();
   testPerspectiveUsesForwardCameraDepth();
   testCloserPointHasLargerPerspectiveDisplacement();
   testBehindCameraIsRejected();
+  testBehindCameraRetainsDirectionalCoordinates();
   testStrictViewportBoundsRejectOverscan();
   testVerticalProjectionUsesSquarePixelFocalLength();
   std::cout << "All Cumquat projection tests passed\n";
