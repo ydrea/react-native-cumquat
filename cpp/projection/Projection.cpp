@@ -33,22 +33,14 @@ Vec3 rotateByQuaternion(const Vec3& vector, const Quaternion& source) {
   };
 }
 
-Quaternion worldToCameraOrientation(
-    const Quaternion& deviceOrientation) {
-  return {
-      -deviceOrientation.x,
-      -deviceOrientation.y,
-      -deviceOrientation.z,
-      deviceOrientation.w,
-  };
-}
 } // namespace
 
 Vec3 worldToCamera(const Vec3& enu, const SensorState& sensorState) {
   if (sensorState.hasOrientationQuaternion) {
-    return rotateByQuaternion(
-        enu,
-        worldToCameraOrientation(sensorState.orientation));
+    // The public contract accepts an already prepared world-to-camera
+    // quaternion. Consumers such as EkoMuzej normalize screen orientation,
+    // true north and the device-pose inverse before calling Cumquat.
+    return rotateByQuaternion(enu, sensorState.orientation);
   }
 
   const double heading = radians(sensorState.headingDeg);
@@ -95,21 +87,20 @@ bool projectToScreen(
     const double forwardDepth = -camera.z;
     depth = forwardDepth;
 
-    if (forwardDepth <= 0.1) {
-      x = width * 0.5;
-      y = height * 0.5;
-      return false;
-    }
-
     const double focal =
         width / (2.0 * std::tan(radians(viewState.horizontalFovDeg) * 0.5));
     const double cameraRight = -camera.y;
     const double cameraUp = -camera.x;
+    const double projectionDepth = forwardDepth > 0.1
+        ? forwardDepth
+        : std::max(camera.length(), 0.1);
 
-    x = width * 0.5 + cameraRight * focal / forwardDepth;
-    y = height * 0.5 - cameraUp * focal / forwardDepth;
+    x = width * 0.5 + cameraRight * focal / projectionDepth;
+    y = height * 0.5 - cameraUp * focal / projectionDepth;
 
-    return x >= 0.0 && x <= width && y >= 0.0 && y <= height;
+    return forwardDepth > 0.1 &&
+        x >= 0.0 && x <= width &&
+        y >= 0.0 && y <= height;
   }
 
   const double focal =
