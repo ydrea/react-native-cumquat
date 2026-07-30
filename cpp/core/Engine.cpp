@@ -55,6 +55,11 @@ std::uint64_t Engine::update(const SensorState& sensorState) {
   frame_.projectedPOIs.clear();
   frame_.visiblePOIs.clear();
 
+  if (sensorState.usesGameRotationVector &&
+      !sensorState.hasOrientationQuaternion) {
+    return frame_.sequence;
+  }
+
   if (!hasOrientationReference_ &&
       sensorState.hasOrientationQuaternion &&
       sensorState.hasInitialHeading) {
@@ -67,10 +72,15 @@ std::uint64_t Engine::update(const SensorState& sensorState) {
   if (sensorState.hasOrientationQuaternion) {
     if (hasOrientationReference_) {
       projectionState.orientation =
-          projection::geographicallyAlignedOrientation(
-              sensorState.orientation,
-              initialOrientation_,
-              initialHeadingDeg_);
+          sensorState.usesGameRotationVector
+          ? projection::geographicallyAlignedGameOrientation(
+                sensorState.orientation,
+                initialOrientation_,
+                initialHeadingDeg_)
+          : projection::geographicallyAlignedOrientation(
+                sensorState.orientation,
+                initialOrientation_,
+                initialHeadingDeg_);
     } else {
       // A DeviceMotion quaternion has no geographic north reference by itself.
       // Do not project it using an invented zero while awaiting the synchronized
