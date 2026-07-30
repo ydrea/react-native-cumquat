@@ -25,6 +25,9 @@ class Engine {
   ViewState viewState_;
   std::vector<POI> pois_;
   FrameSnapshot frame_;
+  Quaternion initialOrientation_;
+  double initialHeadingDeg_{0.0};
+  bool hasOrientationReference_{false};
   bool initialized_{false};
 };
 
