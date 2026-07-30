@@ -33,6 +33,9 @@ export type SensorState = {
   timestampNs: number;
   location: GeoPoint;
   orientationQuaternion?: Quaternion;
+  /** Geographic heading paired with the first orientation quaternion.
+   * Consumed once per initialized engine; later values are ignored. */
+  initialHeadingDegrees?: number;
   headingDegrees: number;
   pitchDegrees: number;
   rollDegrees: number;
