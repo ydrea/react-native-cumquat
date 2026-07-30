@@ -81,6 +81,7 @@ const sensorState: SensorState = {
     altitude: 120,
   },
   orientationQuaternion: { x: 0, y: 0, z: 0, w: 1 },
+  initialHeadingDegrees: 0,
   headingDegrees: 0,
   pitchDegrees: 0,
   rollDegrees: 0,
@@ -91,6 +92,12 @@ const sensorState: SensorState = {
 engine.update(sensorState);
 const frame = engine.getFrame();
 ```
+
+`initialHeadingDegrees` must be supplied with the first usable DeviceMotion
+quaternion. Cumquat consumes that synchronized pair once to establish
+geographic north. It then derives every projection update from DeviceMotion
+alone; later `headingDegrees` changes cannot rotate or realign the scene.
+Reinitializing the engine clears this reference and requires a new pair.
 
 `frame.projectedPOIs` contains active-radius POIs in stable dataset order, including offscreen and distance-clipped entries. `frame.visiblePOIs` contains the visible depth-sorted subset used for picking.
 
