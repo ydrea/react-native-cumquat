@@ -74,25 +74,18 @@ struct GameRotationSensor::Impl {
             static_cast<double>(event.data[0]),
             static_cast<double>(event.data[1]),
             static_cast<double>(event.data[2]),
-            static_cast<double>(event.data[3]),
+            0.0,
         };
-        double norm = std::sqrt(
+        // Android documents only x/y/z for TYPE_GAME_ROTATION_VECTOR.
+        // Reconstruct the non-negative scalar instead of reading optional data[3].
+        const double vectorLengthSquared =
             orientation.x * orientation.x +
             orientation.y * orientation.y +
-            orientation.z * orientation.z +
-            orientation.w * orientation.w);
-
-        // The scalar component is optional in Android's rotation-vector API.
-        if (norm < 0.5) {
-          const double vectorLengthSquared =
-              orientation.x * orientation.x +
-              orientation.y * orientation.y +
-              orientation.z * orientation.z;
-          orientation.w =
-              std::sqrt(std::max(0.0, 1.0 - vectorLengthSquared));
-          norm = std::sqrt(vectorLengthSquared +
-                           orientation.w * orientation.w);
-        }
+            orientation.z * orientation.z;
+        orientation.w =
+            std::sqrt(std::max(0.0, 1.0 - vectorLengthSquared));
+        const double norm =
+            std::sqrt(vectorLengthSquared + orientation.w * orientation.w);
         if (!std::isfinite(norm) || norm <= 0.0) continue;
 
         const double scale = 1.0 / norm;
