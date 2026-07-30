@@ -190,6 +190,36 @@ void testInitialHeadingAnchorsSameQuaternionToGeographicDirection() {
   }
 }
 
+void testGameRotationVectorCardinalTurnsKeepGeographicAlignment() {
+  const Quaternion initial{0.0, 0.0, 0.0, 1.0};
+
+  const auto expectGameForward = [&](
+      const Quaternion& current,
+      double poiBearing,
+      std::string_view message) {
+    SensorState sensor = quaternionSensor();
+    sensor.orientation =
+        cumquat::projection::geographicallyAlignedGameOrientation(
+            current, initial, 0.0);
+    const Vec3 camera = cumquat::projection::worldToCamera(
+        horizontalVector(poiBearing), sensor);
+
+    expectNear(camera.x, 0.0, message);
+    expectNear(camera.y, 0.0, message);
+    expectNear(camera.z, -1.0, message);
+  };
+
+  // Android world Z is positive counter-clockwise. Turning the camera
+  // clockwise from north to east therefore produces a -90° relative rotation.
+  expectGameForward(initial, 0.0, "game-vector north must face north");
+  expectGameForward(
+      zRotation(-90.0), 90.0, "game-vector east must face east");
+  expectGameForward(
+      zRotation(180.0), 180.0, "game-vector south must face south");
+  expectGameForward(
+      zRotation(90.0), 270.0, "game-vector west must face west");
+}
+
 void testEngineConsumesInitialHeadingOnlyOnce() {
   const Quaternion north{
       -0.023453, -0.863483, -0.502306, -0.039194};
@@ -233,6 +263,28 @@ void testEngineConsumesInitialHeadingOnlyOnce() {
       afterCompassJump.depth,
       calibrated.depth,
       "later compass changes must not move projection depth");
+}
+
+void testEngineNeverFallsBackWhileAwaitingGameRotationVector() {
+  Engine engine;
+  engine.initialize({
+      POI{"north", "North", {0.001, 0.0, 0.0}},
+  });
+
+  SensorState sensor;
+  sensor.location = {0.0, 0.0, 0.0};
+  sensor.viewportWidth = 100.0;
+  sensor.viewportHeight = 100.0;
+  sensor.headingDeg = 180.0;
+  sensor.initialHeadingDeg = 180.0;
+  sensor.hasInitialHeading = true;
+  sensor.usesGameRotationVector = true;
+  sensor.hasOrientationQuaternion = false;
+
+  engine.update(sensor);
+  expectTrue(
+      engine.getFrame().projectedPOIs.empty(),
+      "Android must not fall back to magnetometer heading before game-vector data");
 }
 
 void testHorizontalYawDirectionIsReversedWithoutFullConjugation() {
@@ -401,7 +453,9 @@ int main() {
   testExpoLandscapeYawIsConvertedToCameraDirection();
   testCapturedGalaxyS7CardinalTurnsKeepGeographicAlignment();
   testInitialHeadingAnchorsSameQuaternionToGeographicDirection();
+  testGameRotationVectorCardinalTurnsKeepGeographicAlignment();
   testEngineConsumesInitialHeadingOnlyOnce();
+  testEngineNeverFallsBackWhileAwaitingGameRotationVector();
   testHorizontalYawDirectionIsReversedWithoutFullConjugation();
   testLandscapePitchAxisIsNotConjugated();
   testIdentityQuaternionPreservesWorldVector();
