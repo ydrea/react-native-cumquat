@@ -19,6 +19,9 @@ Engine::Engine(EngineConfig config) : config_(config) {
 void Engine::initialize(std::vector<POI> pois) {
   pois_ = std::move(pois);
   frame_ = {};
+  initialOrientation_ = {};
+  initialHeadingDeg_ = 0.0;
+  hasOrientationReference_ = false;
   frame_.projectedPOIs.reserve(pois_.size());
   frame_.visiblePOIs.reserve(
       std::min<std::size_t>(pois_.size(), config_.maxVisiblePOIs));
@@ -52,6 +55,30 @@ std::uint64_t Engine::update(const SensorState& sensorState) {
   frame_.projectedPOIs.clear();
   frame_.visiblePOIs.clear();
 
+  if (!hasOrientationReference_ &&
+      sensorState.hasOrientationQuaternion &&
+      sensorState.hasInitialHeading) {
+    initialOrientation_ = sensorState.orientation;
+    initialHeadingDeg_ = sensorState.initialHeadingDeg;
+    hasOrientationReference_ = true;
+  }
+
+  SensorState projectionState = sensorState;
+  if (sensorState.hasOrientationQuaternion) {
+    if (hasOrientationReference_) {
+      projectionState.orientation =
+          projection::geographicallyAlignedOrientation(
+              sensorState.orientation,
+              initialOrientation_,
+              initialHeadingDeg_);
+    } else {
+      // A DeviceMotion quaternion has no geographic north reference by itself.
+      // Do not project it using an invented zero while awaiting the synchronized
+      // startup heading.
+      return frame_.sequence;
+    }
+  }
+
   for (std::uint32_t index = 0; index < pois_.size(); ++index) {
     const POI& poi = pois_[index];
     const Vec3 enu = geo::ecefToENU(geo::toECEF(poi.position), sensorState.location);
@@ -66,12 +93,12 @@ std::uint64_t Engine::update(const SensorState& sensorState) {
         geo::initialBearingDeg(sensorState.location, poi.position);
     projected.depth = distance;
 
-    const Vec3 camera = projection::worldToCamera(enu, sensorState);
+    const Vec3 camera = projection::worldToCamera(enu, projectionState);
     double x = 0.0;
     double y = 0.0;
     double depth = distance;
     const bool insideViewport = projection::projectToScreen(
-        camera, sensorState, viewState_, x, y, depth);
+        camera, projectionState, viewState_, x, y, depth);
 
     projected.x = x;
     projected.y = y;
