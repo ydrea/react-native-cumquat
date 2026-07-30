@@ -11,6 +11,47 @@ inline double radians(double degrees) {
   return degrees * kPi / 180.0;
 }
 
+Quaternion normalized(const Quaternion& source) {
+  const double norm = std::sqrt(
+      source.x * source.x + source.y * source.y +
+      source.z * source.z + source.w * source.w);
+  const double scale = norm > 0.0 ? 1.0 / norm : 1.0;
+  return {
+      source.x * scale,
+      source.y * scale,
+      source.z * scale,
+      source.w * scale,
+  };
+}
+
+Quaternion multiply(const Quaternion& left, const Quaternion& right) {
+  return {
+      left.w * right.x + left.x * right.w +
+          left.y * right.z - left.z * right.y,
+      left.w * right.y - left.x * right.z +
+          left.y * right.w + left.z * right.x,
+      left.w * right.z + left.x * right.y -
+          left.y * right.x + left.z * right.w,
+      left.w * right.w - left.x * right.x -
+          left.y * right.y - left.z * right.z,
+  };
+}
+
+Quaternion inverse(const Quaternion& source) {
+  const Quaternion q = normalized(source);
+  return {-q.x, -q.y, -q.z, q.w};
+}
+
+Quaternion xRotation(double degrees) {
+  const double half = radians(degrees) * 0.5;
+  return {std::sin(half), 0.0, 0.0, std::cos(half)};
+}
+
+Quaternion zRotation(double degrees) {
+  const double half = radians(degrees) * 0.5;
+  return {0.0, 0.0, std::sin(half), std::cos(half)};
+}
+
 Vec3 rotateByQuaternion(const Vec3& vector, const Quaternion& source) {
   const double norm = std::sqrt(
       source.x * source.x + source.y * source.y +
@@ -49,6 +90,27 @@ Quaternion expoLandscapeToWorldToCamera(
 }
 
 } // namespace
+
+Quaternion geographicallyAlignedOrientation(
+    const Quaternion& currentOrientation,
+    const Quaternion& initialOrientation,
+    double initialHeadingDegrees) {
+  // DeviceMotion supplies a stable relative pose but no dependable geographic
+  // zero. Capture one synchronized heading/quaternion pair, map subsequent
+  // relative rotations into Cumquat's landscape camera basis, and never use
+  // later compass readings for projection.
+  const Quaternion relative = multiply(
+      normalized(currentOrientation),
+      inverse(initialOrientation));
+  const Quaternion basis = zRotation(90.0);
+  const Quaternion mappedRelative = multiply(
+      multiply(basis, relative),
+      inverse(basis));
+  const Quaternion initialCamera = multiply(
+      xRotation(-90.0),
+      zRotation(-initialHeadingDegrees));
+  return normalized(multiply(mappedRelative, initialCamera));
+}
 
 Vec3 worldToCamera(const Vec3& enu, const SensorState& sensorState) {
   if (sensorState.hasOrientationQuaternion) {
