@@ -52,7 +52,78 @@ ViewState ninetyDegreeView() {
   return view;
 }
 
-void testPreparedWorldToCameraQuaternionIsAppliedDirectly() {
+Quaternion multiply(const Quaternion& left, const Quaternion& right) {
+  return {
+      left.w * right.x + left.x * right.w +
+          left.y * right.z - left.z * right.y,
+      left.w * right.y - left.x * right.z +
+          left.y * right.w + left.z * right.x,
+      left.w * right.z + left.x * right.y -
+          left.y * right.x + left.z * right.w,
+      left.w * right.w - left.x * right.x -
+          left.y * right.y - left.z * right.z,
+  };
+}
+
+Quaternion xRotation(double degrees) {
+  const double halfRadians = degrees * 3.14159265358979323846 / 360.0;
+  return {
+      std::sin(halfRadians),
+      0.0,
+      0.0,
+      std::cos(halfRadians),
+  };
+}
+
+Quaternion zRotation(double degrees) {
+  const double halfRadians = degrees * 3.14159265358979323846 / 360.0;
+  return {
+      0.0,
+      0.0,
+      std::sin(halfRadians),
+      std::cos(halfRadians),
+  };
+}
+
+Vec3 horizontalVector(double bearingDegrees) {
+  const double radians =
+      bearingDegrees * 3.14159265358979323846 / 180.0;
+  return {
+      std::sin(radians),
+      std::cos(radians),
+      0.0,
+  };
+}
+
+Quaternion expoLandscapeOrientation(double bearingDegrees) {
+  // Expo's horizontal yaw direction is opposite Cumquat's ENU camera
+  // direction after the level landscape X rotation.
+  return multiply(xRotation(-90.0), zRotation(-bearingDegrees));
+}
+
+void expectForward(
+    double bearingDegrees,
+    std::string_view message) {
+  SensorState sensor = quaternionSensor();
+  sensor.orientation = expoLandscapeOrientation(bearingDegrees);
+
+  const Vec3 camera = cumquat::projection::worldToCamera(
+      horizontalVector(bearingDegrees),
+      sensor);
+
+  expectNear(camera.x, 0.0, message);
+  expectNear(camera.y, 0.0, message);
+  expectNear(camera.z, -1.0, message);
+}
+
+void testExpoLandscapeYawIsConvertedToCameraDirection() {
+  expectForward(0.0, "north must map to camera forward");
+  expectForward(90.0, "east must map to camera forward");
+  expectForward(180.0, "south must map to camera forward");
+  expectForward(270.0, "west must map to camera forward");
+}
+
+void testHorizontalYawDirectionIsReversedWithoutFullConjugation() {
   constexpr double halfSqrtTwo = 0.70710678118654752440;
   SensorState sensor = quaternionSensor();
   sensor.orientation = Quaternion{
@@ -68,9 +139,29 @@ void testPreparedWorldToCameraQuaternionIsAppliedDirectly() {
   expectNear(camera.x, 0.0, "90-degree device yaw should remove camera X");
   expectNear(
       camera.y,
-      1.0,
-      "prepared world-to-camera quaternion must not be conjugated again");
+      -1.0,
+      "positive horizontal yaw must rotate in the camera direction");
   expectNear(camera.z, 0.0, "yaw should preserve camera Z");
+}
+
+void testLandscapePitchAxisIsNotConjugated() {
+  SensorState sensor = quaternionSensor();
+  sensor.orientation = xRotation(-45.0);
+  const Vec3 world{0.0, 1.0, 0.0};
+
+  const Vec3 camera =
+      cumquat::projection::worldToCamera(world, sensor);
+
+  constexpr double halfSqrtTwo = 0.70710678118654752440;
+  expectNear(camera.x, 0.0, "X-axis pitch should preserve X");
+  expectNear(
+      camera.y,
+      halfSqrtTwo,
+      "X-axis pitch must retain its original sign");
+  expectNear(
+      camera.z,
+      -halfSqrtTwo,
+      "X-axis pitch must not be reversed by full conjugation");
 }
 
 void testIdentityQuaternionPreservesWorldVector() {
@@ -195,7 +286,9 @@ void testVerticalProjectionUsesSquarePixelFocalLength() {
 } // namespace
 
 int main() {
-  testPreparedWorldToCameraQuaternionIsAppliedDirectly();
+  testExpoLandscapeYawIsConvertedToCameraDirection();
+  testHorizontalYawDirectionIsReversedWithoutFullConjugation();
+  testLandscapePitchAxisIsNotConjugated();
   testIdentityQuaternionPreservesWorldVector();
   testPerspectiveUsesForwardCameraDepth();
   testCloserPointHasLargerPerspectiveDisplacement();
