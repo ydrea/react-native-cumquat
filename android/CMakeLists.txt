@@ -7,6 +7,7 @@ add_library(
     react-native-cumquat
     STATIC
     ../cpp/CumquatImpl.cpp
+    ../cpp/android/GameRotationSensor.cpp
     ../cpp/bridge/NativeCumquatModule.cpp
     ../cpp/core/Engine.cpp
     ../cpp/geo/Geodesy.cpp
@@ -33,4 +34,5 @@ target_link_libraries(
     jsi
     reactnative
     react_codegen_CumquatSpec
+    android
 )
