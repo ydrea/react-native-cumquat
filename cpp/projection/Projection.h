@@ -10,6 +10,10 @@ Quaternion geographicallyAlignedOrientation(
     const Quaternion& currentOrientation,
     const Quaternion& initialOrientation,
     double initialHeadingDegrees);
+Quaternion geographicallyAlignedGameOrientation(
+    const Quaternion& currentOrientation,
+    const Quaternion& initialOrientation,
+    double initialHeadingDegrees);
 bool projectToScreen(
     const Vec3& camera,
     const SensorState& sensorState,
