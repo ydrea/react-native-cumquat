@@ -1,4 +1,5 @@
 #include "../projection/Projection.h"
+#include "../core/Engine.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -8,6 +9,8 @@
 namespace {
 
 using cumquat::Quaternion;
+using cumquat::Engine;
+using cumquat::POI;
 using cumquat::SensorState;
 using cumquat::Vec3;
 using cumquat::ViewState;
@@ -34,6 +37,18 @@ void expectNear(
   if (std::abs(actual - expected) > kTolerance) {
     std::cerr << "FAIL: " << message << " (expected " << expected
               << ", received " << actual << ")\n";
+    std::exit(EXIT_FAILURE);
+  }
+}
+
+void expectNearWithTolerance(
+    double actual,
+    double expected,
+    double tolerance,
+    std::string_view message) {
+  if (std::abs(actual - expected) > tolerance) {
+    std::cerr << "FAIL: " << message << " (expected " << expected
+              << " ± " << tolerance << ", received " << actual << ")\n";
     std::exit(EXIT_FAILURE);
   }
 }
@@ -121,6 +136,103 @@ void testExpoLandscapeYawIsConvertedToCameraDirection() {
   expectForward(90.0, "east must map to camera forward");
   expectForward(180.0, "south must map to camera forward");
   expectForward(270.0, "west must map to camera forward");
+}
+
+void testCapturedGalaxyS7CardinalTurnsKeepGeographicAlignment() {
+  // Real screen-orientation=90 samples captured on the Galaxy S7. The
+  // DeviceMotion deltas are ~83° north→west and ~88° west→south even though
+  // the previous component-sign conversion collapsed them onto one direction.
+  const Quaternion north{
+      -0.023453, -0.863483, -0.502306, -0.039194};
+  const Quaternion west{
+      0.012318, -0.318339, -0.945196, 0.071508};
+  const Quaternion south{
+      -0.047090, 0.415941, -0.905118, -0.074410};
+
+  const auto expectCapturedForward = [&](
+      const Quaternion& current,
+      double poiBearing,
+      std::string_view message) {
+    SensorState sensor = quaternionSensor();
+    sensor.orientation =
+        cumquat::projection::geographicallyAlignedOrientation(
+            current, north, 0.0);
+    const Vec3 camera = cumquat::projection::worldToCamera(
+        horizontalVector(poiBearing), sensor);
+
+    expectNearWithTolerance(camera.x, 0.0, 0.25, message);
+    expectNearWithTolerance(camera.y, 0.0, 0.25, message);
+    expectNearWithTolerance(camera.z, -1.0, 0.05, message);
+  };
+
+  expectCapturedForward(north, 0.0, "captured north must face north");
+  expectCapturedForward(west, 270.0, "captured west must face west");
+  expectCapturedForward(south, 180.0, "captured south must face south");
+}
+
+void testInitialHeadingAnchorsSameQuaternionToGeographicDirection() {
+  const Quaternion initial{
+      -0.023453, -0.863483, -0.502306, -0.039194};
+
+  for (const double heading : {0.0, 90.0, 180.0, 270.0}) {
+    SensorState sensor = quaternionSensor();
+    sensor.orientation =
+        cumquat::projection::geographicallyAlignedOrientation(
+            initial, initial, heading);
+    const Vec3 camera = cumquat::projection::worldToCamera(
+        horizontalVector(heading), sensor);
+
+    expectNearWithTolerance(
+        camera.z,
+        -1.0,
+        1e-9,
+        "initial heading must establish geographic camera forward");
+  }
+}
+
+void testEngineConsumesInitialHeadingOnlyOnce() {
+  const Quaternion north{
+      -0.023453, -0.863483, -0.502306, -0.039194};
+  Engine engine;
+  engine.initialize({
+      POI{"north", "North", {0.001, 0.0, 0.0}},
+  });
+
+  SensorState sensor = quaternionSensor();
+  sensor.location = {0.0, 0.0, 0.0};
+  sensor.orientation = north;
+  sensor.headingDeg = 217.0;
+
+  engine.update(sensor);
+  expectTrue(
+      engine.getFrame().projectedPOIs.empty(),
+      "engine must wait for an explicit synchronized initial heading");
+
+  sensor.hasInitialHeading = true;
+  sensor.initialHeadingDeg = 0.0;
+  engine.update(sensor);
+  expectTrue(
+      engine.getFrame().projectedPOIs.size() == 1,
+      "initial heading/quaternion pair must start projection");
+  const auto calibrated = engine.getFrame().projectedPOIs.front();
+
+  sensor.hasInitialHeading = false;
+  sensor.headingDeg = 359.0;
+  engine.update(sensor);
+  const auto afterCompassJump = engine.getFrame().projectedPOIs.front();
+
+  expectNear(
+      afterCompassJump.x,
+      calibrated.x,
+      "later compass changes must not move projection X");
+  expectNear(
+      afterCompassJump.y,
+      calibrated.y,
+      "later compass changes must not move projection Y");
+  expectNear(
+      afterCompassJump.depth,
+      calibrated.depth,
+      "later compass changes must not move projection depth");
 }
 
 void testHorizontalYawDirectionIsReversedWithoutFullConjugation() {
@@ -287,6 +399,9 @@ void testVerticalProjectionUsesSquarePixelFocalLength() {
 
 int main() {
   testExpoLandscapeYawIsConvertedToCameraDirection();
+  testCapturedGalaxyS7CardinalTurnsKeepGeographicAlignment();
+  testInitialHeadingAnchorsSameQuaternionToGeographicDirection();
+  testEngineConsumesInitialHeadingOnlyOnce();
   testHorizontalYawDirectionIsReversedWithoutFullConjugation();
   testLandscapePitchAxisIsNotConjugated();
   testIdentityQuaternionPreservesWorldVector();
