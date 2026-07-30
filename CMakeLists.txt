@@ -6,6 +6,8 @@ enable_testing()
 add_executable(
     cumquat-projection-tests
     cpp/__tests__/ProjectionTest.cpp
+    cpp/core/Engine.cpp
+    cpp/geo/Geodesy.cpp
     cpp/projection/Projection.cpp
 )
 
