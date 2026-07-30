@@ -150,6 +150,8 @@ NativeCumquatModule::NativeCumquatModule(
     std::shared_ptr<CallInvoker> jsInvoker)
     : NativeCumquatCxxSpec(std::move(jsInvoker)) {}
 
+NativeCumquatModule::~NativeCumquatModule() = default;
+
 std::string NativeCumquatModule::getVersion(jsi::Runtime&) {
   return "0.1.0-cpp";
 }
@@ -311,6 +313,20 @@ double NativeCumquatModule::update(
     }
     sensorState.hasOrientationQuaternion = true;
   }
+
+#ifdef __ANDROID__
+  // Expo DeviceMotion uses Android's normal rotation vector, which may contain
+  // continuous geomagnetic corrections. Never let that fused orientation
+  // become either the initial reference or a later projection update.
+  sensorState.hasOrientationQuaternion = false;
+  sensorState.usesGameRotationVector = true;
+
+  cumquat::Quaternion gameOrientation;
+  if (gameRotationSensor_.latest(gameOrientation)) {
+    sensorState.orientation = gameOrientation;
+    sensorState.hasOrientationQuaternion = true;
+  }
+#endif
 
   validateFinite(runtime, sensorState.location.latitudeDeg, "location.latitude");
   validateFinite(runtime, sensorState.location.longitudeDeg, "location.longitude");
