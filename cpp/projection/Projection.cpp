@@ -112,6 +112,27 @@ Quaternion geographicallyAlignedOrientation(
   return normalized(multiply(mappedRelative, initialCamera));
 }
 
+Quaternion geographicallyAlignedGameOrientation(
+    const Quaternion& currentOrientation,
+    const Quaternion& initialOrientation,
+    double initialHeadingDegrees) {
+  // Android's game rotation vector is gravity/gyro based and intentionally has
+  // no geographic north. Its relative world yaw is around Android world Z.
+  // Map that world basis into Cumquat's level landscape camera basis, then
+  // anchor it once using the synchronized startup compass heading.
+  const Quaternion relative = multiply(
+      normalized(currentOrientation),
+      inverse(initialOrientation));
+  const Quaternion basis = xRotation(-90.0);
+  const Quaternion mappedRelative = multiply(
+      multiply(basis, relative),
+      inverse(basis));
+  const Quaternion initialCamera = multiply(
+      xRotation(-90.0),
+      zRotation(-initialHeadingDegrees));
+  return normalized(multiply(mappedRelative, initialCamera));
+}
+
 Vec3 worldToCamera(const Vec3& enu, const SensorState& sensorState) {
   if (sensorState.hasOrientationQuaternion) {
     return rotateByQuaternion(
