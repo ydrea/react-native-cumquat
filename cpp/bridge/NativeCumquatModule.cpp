@@ -265,6 +265,16 @@ double NativeCumquatModule::update(
       requiredObject(runtime, sensorObject, "location"));
   sensorState.headingDeg =
       numberOr(runtime, sensorObject, "headingDegrees", 0.0);
+  auto initialHeadingValue =
+      property(runtime, sensorObject, "initialHeadingDegrees");
+  if (initialHeadingValue.isNumber()) {
+    sensorState.initialHeadingDeg = initialHeadingValue.asNumber();
+    sensorState.hasInitialHeading = true;
+    validateFinite(
+        runtime,
+        sensorState.initialHeadingDeg,
+        "initialHeadingDegrees");
+  }
   sensorState.pitchDeg =
       numberOr(runtime, sensorObject, "pitchDegrees", 0.0);
   sensorState.rollDeg =
