@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CumquatSpecJSI.h>
+#include "../android/GameRotationSensor.h"
 
 #include "../core/Engine.h"
 
@@ -17,6 +18,7 @@ class NativeCumquatModule final
     : public NativeCumquatCxxSpec<NativeCumquatModule> {
  public:
   explicit NativeCumquatModule(std::shared_ptr<CallInvoker> jsInvoker);
+  ~NativeCumquatModule() override;
 
   std::string getVersion(jsi::Runtime& runtime);
   double createEngine(jsi::Runtime& runtime, jsi::Object config);
@@ -36,6 +38,7 @@ class NativeCumquatModule final
   void destroyEngine(jsi::Runtime& runtime, double handle);
 
  private:
+  cumquat::android::GameRotationSensor gameRotationSensor_;
   using EnginePtr = std::shared_ptr<cumquat::Engine>;
 
   EnginePtr requireEngine(jsi::Runtime& runtime, double handle) const;
