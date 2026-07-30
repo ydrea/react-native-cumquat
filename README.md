@@ -95,9 +95,16 @@ const frame = engine.getFrame();
 
 `initialHeadingDegrees` must be supplied with the first usable DeviceMotion
 quaternion. Cumquat consumes that synchronized pair once to establish
-geographic north. It then derives every projection update from DeviceMotion
-alone; later `headingDegrees` changes cannot rotate or realign the scene.
+geographic north. It then derives every projection update from the continuous
+non-magnetic orientation source alone; later `headingDegrees` changes cannot
+rotate or realign the scene.
 Reinitializing the engine clears this reference and requires a new pair.
+
+On Android, Cumquat deliberately replaces the supplied Expo DeviceMotion
+orientation with `TYPE_GAME_ROTATION_VECTOR`. Android documents this sensor as
+gyroscope/gravity based and independent of the geomagnetic field. Cumquat never
+falls back to Expo's magnetometer-sensitive rotation vector while waiting for
+the first game-rotation sample.
 
 `frame.projectedPOIs` contains active-radius POIs in stable dataset order, including offscreen and distance-clipped entries. `frame.visiblePOIs` contains the visible depth-sorted subset used for picking.
 
