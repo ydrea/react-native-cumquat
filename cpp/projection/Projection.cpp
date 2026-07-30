@@ -33,14 +33,28 @@ Vec3 rotateByQuaternion(const Vec3& vector, const Quaternion& source) {
   };
 }
 
+Quaternion expoLandscapeToWorldToCamera(
+    const Quaternion& deviceOrientation) {
+  // Expo DeviceMotion's landscape quaternion and Cumquat's ENU camera basis
+  // agree on the X rotation that establishes the level landscape camera, but
+  // express horizontal rotation with opposite Y/Z signs. Conjugating the
+  // complete quaternion also negates X and reverses pitch. Convert only the
+  // two basis components involved in landscape yaw.
+  return {
+      deviceOrientation.x,
+      -deviceOrientation.y,
+      -deviceOrientation.z,
+      deviceOrientation.w,
+  };
+}
+
 } // namespace
 
 Vec3 worldToCamera(const Vec3& enu, const SensorState& sensorState) {
   if (sensorState.hasOrientationQuaternion) {
-    // The public contract accepts an already prepared world-to-camera
-    // quaternion. Consumers such as EkoMuzej normalize screen orientation,
-    // true north and the device-pose inverse before calling Cumquat.
-    return rotateByQuaternion(enu, sensorState.orientation);
+    return rotateByQuaternion(
+        enu,
+        expoLandscapeToWorldToCamera(sensorState.orientation));
   }
 
   const double heading = radians(sensorState.headingDeg);
