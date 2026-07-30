@@ -41,6 +41,8 @@ struct SensorState {
   GeoPoint location;
   Quaternion orientation;
   bool hasOrientationQuaternion{false};
+  double initialHeadingDeg{0.0};
+  bool hasInitialHeading{false};
   double headingDeg{0.0};
   double pitchDeg{0.0};
   double rollDeg{0.0};
