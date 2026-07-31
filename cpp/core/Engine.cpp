@@ -60,7 +60,8 @@ std::uint64_t Engine::update(const SensorState& sensorState) {
     return frame_.sequence;
   }
 
-  if (!hasOrientationReference_ &&
+  if (!sensorState.orientationIsEarthFromDevice &&
+      !hasOrientationReference_ &&
       sensorState.hasOrientationQuaternion &&
       sensorState.hasInitialHeading) {
     initialOrientation_ = sensorState.orientation;
@@ -70,7 +71,12 @@ std::uint64_t Engine::update(const SensorState& sensorState) {
 
   SensorState projectionState = sensorState;
   if (sensorState.hasOrientationQuaternion) {
-    if (hasOrientationReference_) {
+    if (sensorState.orientationIsEarthFromDevice) {
+      // Android already paired and froze its absolute/game quaternion
+      // relationship. The current orientation is now driven only by the game
+      // rotation vector and needs no scalar compass heading.
+      projectionState.orientation = sensorState.orientation;
+    } else if (hasOrientationReference_) {
       projectionState.orientation =
           sensorState.usesGameRotationVector
           ? projection::geographicallyAlignedGameOrientation(

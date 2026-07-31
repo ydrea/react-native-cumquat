@@ -8,6 +8,7 @@ add_library(
     STATIC
     ../cpp/CumquatImpl.cpp
     ../cpp/android/GameRotationSensor.cpp
+    ../cpp/android/RotationAlignment.cpp
     ../cpp/bridge/NativeCumquatModule.cpp
     ../cpp/core/Engine.cpp
     ../cpp/geo/Geodesy.cpp

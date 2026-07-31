@@ -42,6 +42,7 @@ struct SensorState {
   Quaternion orientation;
   bool hasOrientationQuaternion{false};
   bool usesGameRotationVector{false};
+  bool orientationIsEarthFromDevice{false};
   double initialHeadingDeg{0.0};
   bool hasInitialHeading{false};
   double headingDeg{0.0};

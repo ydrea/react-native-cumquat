@@ -93,18 +93,22 @@ engine.update(sensorState);
 const frame = engine.getFrame();
 ```
 
-`initialHeadingDegrees` must be supplied with the first usable DeviceMotion
-quaternion. Cumquat consumes that synchronized pair once to establish
-geographic north. It then derives every projection update from the continuous
-non-magnetic orientation source alone; later `headingDegrees` changes cannot
-rotate or realign the scene.
-Reinitializing the engine clears this reference and requires a new pair.
+On non-Android platforms, `initialHeadingDegrees` must be supplied with the
+first usable DeviceMotion quaternion. Cumquat consumes that synchronized pair
+once to establish geographic north. It then derives every projection update
+from the continuous non-magnetic orientation source alone; later
+`headingDegrees` changes cannot rotate or realign the scene. Reinitializing the
+engine clears this reference and requires a new pair.
 
-On Android, Cumquat deliberately replaces the supplied Expo DeviceMotion
-orientation with `TYPE_GAME_ROTATION_VECTOR`. Android documents this sensor as
-gyroscope/gravity based and independent of the geomagnetic field. Cumquat never
-falls back to Expo's magnetometer-sensitive rotation vector while waiting for
-the first game-rotation sample.
+Android performs this startup alignment natively and does not use the scalar
+heading fields for projection. It pairs the complete `TYPE_ROTATION_VECTOR`
+quaternion with `TYPE_GAME_ROTATION_VECTOR`, accepts a stable timestamp-matched
+window, and freezes the transform between their coordinate frames. The
+absolute and magnetic-field sensors are then disabled. Every subsequent
+orientation update comes only from `TYPE_GAME_ROTATION_VECTOR`, which Android
+defines without the geomagnetic field. Both landscape directions are resolved
+from the transformed Earth-up vector rather than Euler angles, avoiding the
+roll-at-90-degrees heading flip.
 
 `frame.projectedPOIs` contains active-radius POIs in stable dataset order, including offscreen and distance-clipped entries. `frame.visiblePOIs` contains the visible depth-sorted subset used for picking.
 

@@ -1,5 +1,6 @@
 #include "../projection/Projection.h"
 #include "../core/Engine.h"
+#include "../android/RotationAlignment.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -100,6 +101,93 @@ Quaternion zRotation(double degrees) {
   };
 }
 
+Quaternion inverse(const Quaternion& source) {
+  const Quaternion normalized =
+      cumquat::android::normalizedQuaternion(source);
+  return {
+      -normalized.x,
+      -normalized.y,
+      -normalized.z,
+      normalized.w,
+  };
+}
+
+Quaternion negated(const Quaternion& source) {
+  return {-source.x, -source.y, -source.z, -source.w};
+}
+
+Quaternion quaternionFromRotationMatrix(const double matrix[3][3]) {
+  Quaternion result;
+  const double trace = matrix[0][0] + matrix[1][1] + matrix[2][2];
+  if (trace > 0.0) {
+    const double scale = std::sqrt(trace + 1.0) * 2.0;
+    result.w = 0.25 * scale;
+    result.x = (matrix[2][1] - matrix[1][2]) / scale;
+    result.y = (matrix[0][2] - matrix[2][0]) / scale;
+    result.z = (matrix[1][0] - matrix[0][1]) / scale;
+  } else if (matrix[0][0] > matrix[1][1] &&
+             matrix[0][0] > matrix[2][2]) {
+    const double scale =
+        std::sqrt(1.0 + matrix[0][0] -
+                  matrix[1][1] - matrix[2][2]) * 2.0;
+    result.w = (matrix[2][1] - matrix[1][2]) / scale;
+    result.x = 0.25 * scale;
+    result.y = (matrix[0][1] + matrix[1][0]) / scale;
+    result.z = (matrix[0][2] + matrix[2][0]) / scale;
+  } else if (matrix[1][1] > matrix[2][2]) {
+    const double scale =
+        std::sqrt(1.0 + matrix[1][1] -
+                  matrix[0][0] - matrix[2][2]) * 2.0;
+    result.w = (matrix[0][2] - matrix[2][0]) / scale;
+    result.x = (matrix[0][1] + matrix[1][0]) / scale;
+    result.y = 0.25 * scale;
+    result.z = (matrix[1][2] + matrix[2][1]) / scale;
+  } else {
+    const double scale =
+        std::sqrt(1.0 + matrix[2][2] -
+                  matrix[0][0] - matrix[1][1]) * 2.0;
+    result.w = (matrix[1][0] - matrix[0][1]) / scale;
+    result.x = (matrix[0][2] + matrix[2][0]) / scale;
+    result.y = (matrix[1][2] + matrix[2][1]) / scale;
+    result.z = 0.25 * scale;
+  }
+  return cumquat::android::normalizedQuaternion(result);
+}
+
+Quaternion northFacingEarthFromDevice(bool positiveXIsScreenUp) {
+  if (positiveXIsScreenUp) {
+    // Device +X -> up, +Y -> west, +Z -> south.
+    const double matrix[3][3]{
+        {0.0, -1.0, 0.0},
+        {0.0, 0.0, -1.0},
+        {1.0, 0.0, 0.0},
+    };
+    return quaternionFromRotationMatrix(matrix);
+  }
+
+  // Device +X -> down, +Y -> east, +Z -> south.
+  const double matrix[3][3]{
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, -1.0},
+      {-1.0, 0.0, 0.0},
+  };
+  return quaternionFromRotationMatrix(matrix);
+}
+
+void expectQuaternionEquivalent(
+    const Quaternion& actual,
+    const Quaternion& expected,
+    double tolerance,
+    std::string_view message) {
+  const double error =
+      cumquat::android::quaternionAngularDistanceDeg(actual, expected);
+  if (error > tolerance) {
+    std::cerr << "FAIL: " << message << " (angular error "
+              << error << " degrees)\n";
+    std::exit(EXIT_FAILURE);
+  }
+}
+
 Vec3 horizontalVector(double bearingDegrees) {
   const double radians =
       bearingDegrees * 3.14159265358979323846 / 180.0;
@@ -108,6 +196,161 @@ Vec3 horizontalVector(double bearingDegrees) {
       std::cos(radians),
       0.0,
   };
+}
+
+void testFullQuaternionAlignmentUsesAbsoluteSensorOnlyAtStartup() {
+  cumquat::android::RotationAlignment alignment;
+  const Quaternion absoluteNorth = northFacingEarthFromDevice(true);
+  const Quaternion gameNorth = zRotation(37.0);
+
+  for (std::size_t index = 0;
+       index < cumquat::android::RotationAlignment::kRequiredSamples;
+       ++index) {
+    const std::int64_t timestamp =
+        1'000'000'000 + static_cast<std::int64_t>(index) * 16'000'000;
+    alignment.addPair(
+        {
+            index % 2 == 0 ? absoluteNorth : negated(absoluteNorth),
+            timestamp,
+        },
+        {gameNorth, timestamp + 2'000'000},
+        47.0);
+  }
+
+  expectTrue(
+      alignment.isCalibrated(),
+      "stable absolute/game pairs must calibrate");
+  expectQuaternionEquivalent(
+      alignment.alignGameOrientation(gameNorth),
+      absoluteNorth,
+      1e-7,
+      "frozen alignment must reproduce startup Earth orientation");
+
+  const Quaternion gameEast = multiply(
+      inverse(absoluteNorth),
+      multiply(zRotation(-90.0), absoluteNorth));
+  const Quaternion currentGame = multiply(gameNorth, gameEast);
+  const Quaternion expectedEast = multiply(
+      zRotation(-90.0),
+      absoluteNorth);
+
+  expectQuaternionEquivalent(
+      alignment.alignGameOrientation(currentGame),
+      expectedEast,
+      1e-7,
+      "later orientation must depend only on the game quaternion");
+
+  // Once calibrated, even an absurd later absolute sample is ignored.
+  alignment.addPair(
+      {zRotation(180.0), 9'000'000'000},
+      {currentGame, 9'000'000'000},
+      47.0);
+  expectQuaternionEquivalent(
+      alignment.alignGameOrientation(currentGame),
+      expectedEast,
+      1e-7,
+      "later magnetometer orientation must not alter frozen alignment");
+}
+
+void testAlignmentRejectsBadFieldAndUnsynchronizedPairs() {
+  cumquat::android::RotationAlignment alignment;
+  const Quaternion absolute = northFacingEarthFromDevice(true);
+  const Quaternion game{};
+
+  for (std::size_t index = 0;
+       index < cumquat::android::RotationAlignment::kRequiredSamples;
+       ++index) {
+    const std::int64_t timestamp =
+        1'000'000'000 + static_cast<std::int64_t>(index) * 16'000'000;
+    alignment.addPair(
+        {absolute, timestamp},
+        {game, timestamp},
+        7.0);
+  }
+  expectFalse(
+      alignment.isCalibrated(),
+      "implausible magnetic field must not establish alignment");
+
+  for (std::size_t index = 0;
+       index < cumquat::android::RotationAlignment::kRequiredSamples;
+       ++index) {
+    const std::int64_t timestamp =
+        2'000'000'000 + static_cast<std::int64_t>(index) * 16'000'000;
+    alignment.addPair(
+        {absolute, timestamp},
+        {game, timestamp + 100'000'000},
+        47.0);
+  }
+  expectFalse(
+      alignment.isCalibrated(),
+      "samples separated by 100 ms must not establish alignment");
+}
+
+void testEarthAlignedProjectionSupportsBothLandscapeDirections() {
+  for (const bool positiveXIsScreenUp : {true, false}) {
+    SensorState sensor = quaternionSensor();
+    sensor.orientationIsEarthFromDevice = true;
+    sensor.orientation =
+        northFacingEarthFromDevice(positiveXIsScreenUp);
+
+    const Vec3 northCamera =
+        cumquat::projection::worldToCamera({0.0, 1.0, 0.0}, sensor);
+    expectNear(
+        northCamera.z,
+        -1.0,
+        "north-facing rear camera must see north in either landscape side");
+
+    const Vec3 eastCamera =
+        cumquat::projection::worldToCamera({1.0, 0.0, 0.0}, sensor);
+    expectTrue(
+        -eastCamera.y > 0.0,
+        "east must appear screen-right while camera faces north");
+
+    const Vec3 upCamera =
+        cumquat::projection::worldToCamera({0.0, 0.0, 1.0}, sensor);
+    expectTrue(
+        -upCamera.x > 0.0,
+        "Earth up must appear screen-up in either landscape side");
+  }
+}
+
+void testEarthAlignedEngineNeverUsesScalarHeading() {
+  Engine engine;
+  engine.initialize({
+      POI{"north", "North", {0.001, 0.0, 0.0}},
+  });
+
+  SensorState sensor = quaternionSensor();
+  sensor.location = {0.0, 0.0, 0.0};
+  sensor.usesGameRotationVector = true;
+  sensor.orientationIsEarthFromDevice = true;
+  sensor.orientation = northFacingEarthFromDevice(true);
+  sensor.headingDeg = 217.0;
+
+  engine.update(sensor);
+  expectTrue(
+      engine.getFrame().projectedPOIs.size() == 1,
+      "full Earth alignment must not wait for scalar heading");
+  const auto calibrated = engine.getFrame().projectedPOIs.front();
+
+  sensor.headingDeg = 0.0;
+  sensor.initialHeadingDeg = 359.0;
+  sensor.hasInitialHeading = true;
+  engine.update(sensor);
+  const auto afterCompassJump = engine.getFrame().projectedPOIs.front();
+
+  expectNear(
+      afterCompassJump.x,
+      calibrated.x,
+      "scalar heading changes must not move Earth-aligned X");
+  expectNear(
+      afterCompassJump.y,
+      calibrated.y,
+      "scalar heading changes must not move Earth-aligned Y");
+  expectNear(
+      afterCompassJump.depth,
+      calibrated.depth,
+      "scalar heading changes must not move Earth-aligned depth");
 }
 
 Quaternion expoLandscapeOrientation(double bearingDegrees) {
@@ -450,6 +693,10 @@ void testVerticalProjectionUsesSquarePixelFocalLength() {
 } // namespace
 
 int main() {
+  testFullQuaternionAlignmentUsesAbsoluteSensorOnlyAtStartup();
+  testAlignmentRejectsBadFieldAndUnsynchronizedPairs();
+  testEarthAlignedProjectionSupportsBothLandscapeDirections();
+  testEarthAlignedEngineNeverUsesScalarHeading();
   testExpoLandscapeYawIsConvertedToCameraDirection();
   testCapturedGalaxyS7CardinalTurnsKeepGeographicAlignment();
   testInitialHeadingAnchorsSameQuaternionToGeographicDirection();

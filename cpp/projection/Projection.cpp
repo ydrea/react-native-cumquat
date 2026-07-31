@@ -135,6 +135,31 @@ Quaternion geographicallyAlignedGameOrientation(
 
 Vec3 worldToCamera(const Vec3& enu, const SensorState& sensorState) {
   if (sensorState.hasOrientationQuaternion) {
+    if (sensorState.orientationIsEarthFromDevice) {
+      // The native Android sensor supplies device -> magnetic ENU. Transform
+      // the POI into physical device axes, then infer which landscape edge is
+      // screen-up from gravity. This avoids Euler angles and supports both
+      // landscape directions while keeping rear-camera forward fixed at -Z.
+      const Quaternion deviceFromEarth = inverse(sensorState.orientation);
+      const Vec3 device = rotateByQuaternion(enu, deviceFromEarth);
+      const Vec3 upDevice = rotateByQuaternion(
+          Vec3{0.0, 0.0, 1.0},
+          deviceFromEarth);
+
+      const bool positiveXIsScreenUp = upDevice.x >= 0.0;
+      const double screenRight = positiveXIsScreenUp
+          ? -device.y
+          : device.y;
+      const double screenUp = positiveXIsScreenUp
+          ? device.x
+          : -device.x;
+      const double forwardDepth = -device.z;
+
+      // Preserve projectToScreen's established quaternion camera convention:
+      // right=-Y, up=-X and forward=-Z.
+      return {-screenUp, -screenRight, -forwardDepth};
+    }
+
     return rotateByQuaternion(
         enu,
         expoLandscapeToWorldToCamera(sensorState.orientation));

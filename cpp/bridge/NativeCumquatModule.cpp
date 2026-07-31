@@ -325,6 +325,7 @@ double NativeCumquatModule::update(
   if (gameRotationSensor_.latest(gameOrientation)) {
     sensorState.orientation = gameOrientation;
     sensorState.hasOrientationQuaternion = true;
+    sensorState.orientationIsEarthFromDevice = true;
   }
 #endif
 
