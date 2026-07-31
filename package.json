@@ -1,6 +1,6 @@
 {
   "name": "react-native-cumquat",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Stateful, quaternion-based (<i>cum quat</i>, with quaternion, Lat.) spatial projection engine for React Native AR applications",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
@@ -66,7 +66,7 @@
   "homepage": "https://github.com/ydrea/react-native-cumquat#readme",
   "publishConfig": {
     "access": "public",
-    "provenance": true,
+    "provenance": false,
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false,
