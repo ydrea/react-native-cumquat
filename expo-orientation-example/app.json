@@ -11,6 +11,12 @@
     },
     "ios": {
       "bundleIdentifier": "com.ydrea.cumquatorientation"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0fd138c3-af33-451c-a28c-6fd747e511bf"
+      }
+    },
+    "owner": "ydrea"
   }
 }

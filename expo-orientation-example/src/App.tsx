@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -20,10 +20,14 @@ function number(value: number | undefined) {
 export default function App() {
   const { width, height } = useWindowDimensions();
   const [smoothingEnabled, setSmoothingEnabled] = useState(false);
-  const sceneHeight = Math.max(240, height * 0.45);
+  const sceneHeight = Math.max(240, height * 0.4);
   const state = useCumquatOrientation(width, sceneHeight, smoothingEnabled);
   const q = state.rawQuaternion;
   const bearing = cameraBearing(state.orientation);
+
+  useEffect(() => {
+    console.log('state', state);
+  }, [state]);
 
   return (
     <ScrollView style={styles.safeArea}>
