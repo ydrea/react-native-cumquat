@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Pressable,
-  SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -20,13 +20,13 @@ function number(value: number | undefined) {
 export default function App() {
   const { width, height } = useWindowDimensions();
   const [smoothingEnabled, setSmoothingEnabled] = useState(false);
-  const sceneHeight = Math.max(260, height * 0.55);
+  const sceneHeight = Math.max(240, height * 0.45);
   const state = useCumquatOrientation(width, sceneHeight, smoothingEnabled);
   const q = state.rawQuaternion;
   const bearing = cameraBearing(state.orientation);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScrollView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#07101e" />
       <View style={styles.header}>
         <View>
@@ -108,7 +108,7 @@ export default function App() {
         )}
         {state.error && <Text style={styles.error}>{state.error}</Text>}
       </View>
-    </SafeAreaView>
+    </ScrollView>
   );
 }
 
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2.2,
     fontWeight: '700',
   },
-  title: { color: '#f5f8ff', fontSize: 31, lineHeight: 36, fontWeight: '300' },
+  title: { color: '#f5f8ff', fontSize: 11, lineHeight: 36, fontWeight: '300' },
   status: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     bottom: 14,
     alignItems: 'center',
   },
-  sceneMessageTitle: { color: '#f3f6fd', fontSize: 14, fontWeight: '700' },
+  sceneMessageTitle: { color: '#f3f6fd', fontSize: 12, fontWeight: '700' },
   sceneMessageText: {
     color: '#8294af',
     fontSize: 11,
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   },
   panel: {
     margin: 16,
-    marginTop: 12,
+    marginTop: 2,
     padding: 16,
     borderRadius: 18,
     backgroundColor: '#0d1a2c',
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 2,
   },
   panelTitle: {
     color: '#8294af',
@@ -234,6 +234,6 @@ const styles = StyleSheet.create({
   },
   metaLabel: { color: '#71839f', fontSize: 12 },
   metaValue: { color: '#c8d4e7', fontSize: 12, fontVariant: ['tabular-nums'] },
-  warning: { color: '#b6a7da', fontSize: 11, lineHeight: 16, marginTop: 12 },
-  error: { color: '#ff8b98', fontSize: 11, lineHeight: 16, marginTop: 12 },
+  warning: { color: '#b6a7da', fontSize: 11, lineHeight: 16, marginTop: 2 },
+  error: { color: '#ff8b98', fontSize: 11, lineHeight: 16, marginTop: 2 },
 });
