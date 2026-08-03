@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { PhoneScene } from './PhoneScene';
+import { cameraBearing } from './orientationMath';
 import { useCumquatOrientation } from './useCumquatOrientation';
 
 function number(value: number | undefined) {
@@ -22,6 +23,7 @@ export default function App() {
   const sceneHeight = Math.max(260, height * 0.55);
   const state = useCumquatOrientation(width, sceneHeight, smoothingEnabled);
   const q = state.rawQuaternion;
+  const bearing = cameraBearing(state.orientation);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -76,6 +78,12 @@ export default function App() {
           ))}
         </View>
 
+        <View style={styles.metaRow}>
+          <Text style={styles.metaLabel}>Camera bearing</Text>
+          <Text style={styles.metaValue}>
+            {bearing === null ? '—' : `${Math.round(bearing)}°`}
+          </Text>
+        </View>
         <View style={styles.metaRow}>
           <Text style={styles.metaLabel}>Convention</Text>
           <Text style={styles.metaValue}>

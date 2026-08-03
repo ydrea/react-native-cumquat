@@ -43,6 +43,15 @@ export function rotateVector(source: Vec3, orientation: Quaternion): Vec3 {
   ];
 }
 
+export function cameraBearing(frame: FrameOrientation | null): number | null {
+  if (!frame) return null;
+
+  const [east, north] = rotateVector([0, 0, -1], modelOrientation(frame));
+  if (Math.hypot(east, north) < 0.01) return null;
+
+  return ((Math.atan2(east, north) * 180) / Math.PI + 360) % 360;
+}
+
 export function slerp(
   fromSource: Quaternion,
   toSource: Quaternion,

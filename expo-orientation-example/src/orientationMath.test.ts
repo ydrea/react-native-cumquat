@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  cameraBearing,
   inverseQuaternion,
   modelOrientation,
   normalizeQuaternion,
@@ -33,6 +34,35 @@ test('inverts world-to-camera for the displayed model', () => {
   assert.deepEqual(
     modelOrientation({ quaternion: source, convention: 'world-to-camera' }),
     inverseQuaternion(source)
+  );
+});
+
+test('derives rear-camera bearing from either frame convention', () => {
+  const half = Math.SQRT1_2;
+
+  near(
+    cameraBearing({
+      quaternion: { x: half, y: 0, z: 0, w: half },
+      convention: 'earth-from-device',
+    })!,
+    0
+  );
+  near(
+    cameraBearing({
+      quaternion: { x: -half, y: 0, z: 0, w: half },
+      convention: 'world-to-camera',
+    })!,
+    0
+  );
+});
+
+test('has no horizontal bearing while the camera points vertically', () => {
+  assert.equal(
+    cameraBearing({
+      quaternion: { x: 0, y: 0, z: 0, w: 1 },
+      convention: 'earth-from-device',
+    }),
+    null
   );
 });
 

@@ -98,6 +98,10 @@ export function PhoneScene({ orientation, width, height }: Props) {
       { label: 'U', color: '#376881', vector: [0, 0, 1.55] as Vec3 },
     ].map((axis) => ({ ...axis, end: project(axis.vector, width, height) }));
 
+    ///////////
+    // const bearing = ((Math.atan2(forward.x, forward.y) * 180) / Math.PI + 360) % 360;
+    ///////////
+
     return {
       faces,
       deviceAxes,
