@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Cumquat Orientation",
+    "slug": "cumquat-orientation",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.ydrea.cumquatorientation"
+    },
+    "ios": {
+      "bundleIdentifier": "com.ydrea.cumquatorientation"
+    }
+  }
+}

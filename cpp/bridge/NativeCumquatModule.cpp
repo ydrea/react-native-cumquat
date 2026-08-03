@@ -144,6 +144,17 @@ jsi::Object serializeProjectedPOI(
   return output;
 }
 
+jsi::Object serializeQuaternion(
+    jsi::Runtime& runtime,
+    const cumquat::Quaternion& source) {
+  jsi::Object output(runtime);
+  output.setProperty(runtime, "x", source.x);
+  output.setProperty(runtime, "y", source.y);
+  output.setProperty(runtime, "z", source.z);
+  output.setProperty(runtime, "w", source.w);
+  return output;
+}
+
 } // namespace
 
 NativeCumquatModule::NativeCumquatModule(
@@ -357,6 +368,26 @@ jsi::Object NativeCumquatModule::getFrame(
       runtime,
       "timestampNs",
       static_cast<double>(snapshot.timestampNs));
+
+  if (snapshot.orientation.has_value()) {
+    jsi::Object orientation(runtime);
+    orientation.setProperty(
+        runtime,
+        "quaternion",
+        serializeQuaternion(runtime, snapshot.orientation->quaternion));
+    orientation.setProperty(
+        runtime,
+        "convention",
+        jsi::String::createFromUtf8(
+            runtime,
+            snapshot.orientation->convention ==
+                    cumquat::OrientationConvention::EarthFromDevice
+                ? "earth-from-device"
+                : "world-to-camera"));
+    frame.setProperty(runtime, "orientation", std::move(orientation));
+  } else {
+    frame.setProperty(runtime, "orientation", jsi::Value::null());
+  }
 
   jsi::Array projected(runtime, snapshot.projectedPOIs.size());
   for (std::size_t index = 0; index < snapshot.projectedPOIs.size(); ++index) {

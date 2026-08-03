@@ -11,6 +11,10 @@ jest.mock('react-native', () => ({
       getFrame: () => ({
         sequence: 7,
         timestampNs: 1,
+        orientation: {
+          quaternion: { x: 0, y: 0, z: 0, w: 1 },
+          convention: 'earth-from-device',
+        },
         projectedPOIs: [],
         visiblePOIs: [],
       }),
@@ -44,7 +48,13 @@ it('exposes the stateful native engine wrapper', () => {
       viewportHeight: 100,
     })
   ).toBe(7);
-  expect(engine.getFrame().sequence).toBe(7);
+  expect(engine.getFrame()).toMatchObject({
+    sequence: 7,
+    orientation: {
+      quaternion: { x: 0, y: 0, z: 0, w: 1 },
+      convention: 'earth-from-device',
+    },
+  });
   expect(engine.pick(10, 10)).toBeNull();
 
   engine.dispose();

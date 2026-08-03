@@ -93,6 +93,17 @@ engine.update(sensorState);
 const frame = engine.getFrame();
 ```
 
+`frame.orientation` exposes the exact normalized quaternion used for the
+frame, together with its coordinate convention. It is `null` while Cumquat is
+waiting for Android sensor calibration or the non-Android synchronized
+heading/quaternion reference.
+
+```ts
+if (frame.orientation?.convention === 'earth-from-device') {
+  // frame.orientation.quaternion rotates device axes into geographic ENU.
+}
+```
+
 On non-Android platforms, `initialHeadingDegrees` must be supplied with the
 first usable DeviceMotion quaternion. Cumquat consumes that synchronized pair
 once to establish geographic north. It then derives every projection update

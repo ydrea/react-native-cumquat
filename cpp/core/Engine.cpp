@@ -52,6 +52,7 @@ std::uint64_t Engine::update(const SensorState& sensorState) {
 
   frame_.sequence += 1;
   frame_.timestampNs = sensorState.timestampNs;
+  frame_.orientation.reset();
   frame_.projectedPOIs.clear();
   frame_.visiblePOIs.clear();
 
@@ -93,6 +94,13 @@ std::uint64_t Engine::update(const SensorState& sensorState) {
       // startup heading.
       return frame_.sequence;
     }
+
+    frame_.orientation = FrameOrientation{
+        projectionState.orientation,
+        sensorState.orientationIsEarthFromDevice
+            ? OrientationConvention::EarthFromDevice
+            : OrientationConvention::WorldToCamera,
+    };
   }
 
   for (std::uint32_t index = 0; index < pois_.size(); ++index) {

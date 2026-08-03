@@ -183,6 +183,7 @@
     },
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
+      "<rootDir>/expo-orientation-example/",
       "<rootDir>/lib/"
     ]
   },

@@ -11,6 +11,7 @@ namespace {
 
 using cumquat::Quaternion;
 using cumquat::Engine;
+using cumquat::OrientationConvention;
 using cumquat::POI;
 using cumquat::SensorState;
 using cumquat::Vec3;
@@ -690,6 +691,39 @@ void testVerticalProjectionUsesSquarePixelFocalLength() {
   expectNear(y, 30.0, "vertical projection should use the pixel focal length");
 }
 
+void testFrameExposesEarthFromDeviceOrientation() {
+  Engine engine;
+  engine.initialize(std::vector<POI>{});
+
+  SensorState sensor = quaternionSensor();
+  sensor.timestampNs = 42;
+  sensor.orientation = {0.1, 0.2, 0.3, 0.9};
+  sensor.orientationIsEarthFromDevice = true;
+
+  engine.update(sensor);
+  const auto& orientation = engine.getFrame().orientation;
+  expectTrue(orientation.has_value(), "ready frame should expose orientation");
+  expectTrue(
+      orientation->convention == OrientationConvention::EarthFromDevice,
+      "native Android orientation must declare earth-from-device convention");
+  expectNear(orientation->quaternion.x, 0.1, "orientation X should be preserved");
+  expectNear(orientation->quaternion.y, 0.2, "orientation Y should be preserved");
+  expectNear(orientation->quaternion.z, 0.3, "orientation Z should be preserved");
+  expectNear(orientation->quaternion.w, 0.9, "orientation W should be preserved");
+}
+
+void testFrameOrientationIsNullUntilReferenceIsReady() {
+  Engine engine;
+  engine.initialize(std::vector<POI>{});
+
+  SensorState sensor = quaternionSensor();
+  engine.update(sensor);
+
+  expectFalse(
+      engine.getFrame().orientation.has_value(),
+      "unaligned DeviceMotion frame must not expose an invented orientation");
+}
+
 } // namespace
 
 int main() {
@@ -712,6 +746,8 @@ int main() {
   testBehindCameraRetainsDirectionalCoordinates();
   testStrictViewportBoundsRejectOverscan();
   testVerticalProjectionUsesSquarePixelFocalLength();
+  testFrameExposesEarthFromDeviceOrientation();
+  testFrameOrientationIsNullUntilReferenceIsReady();
   std::cout << "All Cumquat projection tests passed\n";
   return EXIT_SUCCESS;
 }

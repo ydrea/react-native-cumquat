@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -70,9 +71,20 @@ struct VisiblePOI {
   DistanceClip clippedByDistance{DistanceClip::None};
 };
 
+enum class OrientationConvention : std::uint8_t {
+  EarthFromDevice = 0,
+  WorldToCamera = 1,
+};
+
+struct FrameOrientation {
+  Quaternion quaternion;
+  OrientationConvention convention{OrientationConvention::WorldToCamera};
+};
+
 struct FrameSnapshot {
   std::uint64_t sequence{0};
   std::int64_t timestampNs{0};
+  std::optional<FrameOrientation> orientation;
   std::vector<VisiblePOI> projectedPOIs;
   std::vector<VisiblePOI> visiblePOIs;
 };

@@ -8,6 +8,7 @@ export function getCumquatNativeVersion(): string {
 
 export type {
   EngineConfig,
+  FrameOrientation,
   FrameSnapshot,
   GeoPoint,
   PickResult,

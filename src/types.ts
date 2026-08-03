@@ -58,9 +58,21 @@ export type ProjectedPOI = VisiblePOI & {
   clippedByDistance: 'min' | 'max' | null;
 };
 
+/** The exact normalized quaternion used by Cumquat for the latest frame. */
+export type FrameOrientation = {
+  quaternion: Quaternion;
+  /**
+   * `earth-from-device` rotates physical device axes into geographic ENU.
+   * `world-to-camera` rotates geographic ENU into Cumquat's camera axes.
+   */
+  convention: 'earth-from-device' | 'world-to-camera';
+};
+
 export type FrameSnapshot = {
   sequence: number;
   timestampNs: number;
+  /** Null until the native sensor or synchronized orientation reference is ready. */
+  orientation: FrameOrientation | null;
   projectedPOIs: readonly ProjectedPOI[];
   visiblePOIs: readonly ProjectedPOI[];
 };
