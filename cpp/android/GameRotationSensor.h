@@ -15,13 +15,12 @@ class GameRotationSensor {
   GameRotationSensor& operator=(const GameRotationSensor&) = delete;
 
   /**
-   * Returns the current device-to-magnetic-ENU orientation. Before startup
-   * calibration completes this returns false; after calibration it is driven
-   * only by TYPE_GAME_ROTATION_VECTOR.
+   * Returns Android's current TYPE_GAME_ROTATION_VECTOR quaternion. This
+   * sensor deliberately has no geographic north; Engine pairs its first usable
+   * sample with initialHeadingDegrees and freezes that reference.
    */
   bool latest(Quaternion& orientation) const;
   bool isAvailable() const;
-  bool isCalibrated() const;
 
  private:
   struct Impl;

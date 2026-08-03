@@ -1,6 +1,6 @@
 {
   "name": "react-native-cumquat",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Stateful, quaternion-based (<i>cum quat</i>, with quaternion, Lat.) spatial projection engine for React Native AR applications",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",

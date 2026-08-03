@@ -95,8 +95,7 @@ const frame = engine.getFrame();
 
 `frame.orientation` exposes the exact normalized quaternion used for the
 frame, together with its coordinate convention. It is `null` while Cumquat is
-waiting for Android sensor calibration or the non-Android synchronized
-heading/quaternion reference.
+waiting for the synchronized heading/quaternion reference.
 
 ```ts
 if (frame.orientation?.convention === 'earth-from-device') {
@@ -104,22 +103,18 @@ if (frame.orientation?.convention === 'earth-from-device') {
 }
 ```
 
-On non-Android platforms, `initialHeadingDegrees` must be supplied with the
-first usable DeviceMotion quaternion. Cumquat consumes that synchronized pair
-once to establish geographic north. It then derives every projection update
-from the continuous non-magnetic orientation source alone; later
-`headingDegrees` changes cannot rotate or realign the scene. Reinitializing the
-engine clears this reference and requires a new pair.
+`initialHeadingDegrees` must be supplied with the first usable orientation
+quaternion. Cumquat consumes that synchronized pair once to establish
+geographic north. It then derives every projection update from a continuous
+non-magnetic orientation source; later `headingDegrees` changes cannot rotate
+or realign the scene. Reinitializing the engine clears this reference and
+requires a new pair.
 
-Android performs this startup alignment natively and does not use the scalar
-heading fields for projection. It pairs the complete `TYPE_ROTATION_VECTOR`
-quaternion with `TYPE_GAME_ROTATION_VECTOR`, accepts a stable timestamp-matched
-window, and freezes the transform between their coordinate frames. The
-absolute and magnetic-field sensors are then disabled. Every subsequent
-orientation update comes only from `TYPE_GAME_ROTATION_VECTOR`, which Android
-defines without the geomagnetic field. Both landscape directions are resolved
-from the transformed Earth-up vector rather than Euler angles, avoiding the
-roll-at-90-degrees heading flip.
+On Android the motion source is `TYPE_GAME_ROTATION_VECTOR`. Cumquat does not
+subscribe to Android's magnetically corrected `TYPE_ROTATION_VECTOR`, so a
+disturbed field cannot silently establish a different startup reference. The
+application decides when its one-time heading is acceptable and supplies it as
+`initialHeadingDegrees`; every later update is driven only by the game vector.
 
 `frame.projectedPOIs` contains active-radius POIs in stable dataset order, including offscreen and distance-clipped entries. `frame.visiblePOIs` contains the visible depth-sorted subset used for picking.
 

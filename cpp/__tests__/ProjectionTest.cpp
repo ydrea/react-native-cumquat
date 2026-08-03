@@ -509,6 +509,46 @@ void testEngineConsumesInitialHeadingOnlyOnce() {
       "later compass changes must not move projection depth");
 }
 
+void testGameRotationRestartUsesExplicitCameraBearing() {
+  const Quaternion startupGame{
+      0.129410, -0.482963, 0.224144, 0.836516};
+
+  const auto startEngine = [&](double initialCameraBearing) {
+    Engine engine;
+    engine.initialize(std::vector<POI>{});
+
+    SensorState sensor = quaternionSensor();
+    sensor.usesGameRotationVector = true;
+    sensor.orientation = startupGame;
+    sensor.initialHeadingDeg = initialCameraBearing;
+    sensor.hasInitialHeading = true;
+    engine.update(sensor);
+
+    const auto& frameOrientation = engine.getFrame().orientation;
+    expectTrue(
+        frameOrientation.has_value(),
+        "game-vector startup must expose a referenced frame orientation");
+    expectTrue(
+        frameOrientation->convention == OrientationConvention::WorldToCamera,
+        "game-vector startup must expose world-to-camera orientation");
+    return frameOrientation->quaternion;
+  };
+
+  const Quaternion firstNorth = startEngine(0.0);
+  const Quaternion restartedNorth = startEngine(0.0);
+  expectQuaternionEquivalent(
+      restartedNorth,
+      firstNorth,
+      1e-9,
+      "restart with the same physical camera bearing must preserve north");
+
+  const Quaternion restartedEast = startEngine(90.0);
+  expectFalse(
+      std::abs(restartedEast.z - firstNorth.z) < 1e-9 &&
+          std::abs(restartedEast.w - firstNorth.w) < 1e-9,
+      "startup must use the explicit physical camera bearing");
+}
+
 void testEngineNeverFallsBackWhileAwaitingGameRotationVector() {
   Engine engine;
   engine.initialize({
@@ -736,6 +776,7 @@ int main() {
   testInitialHeadingAnchorsSameQuaternionToGeographicDirection();
   testGameRotationVectorCardinalTurnsKeepGeographicAlignment();
   testEngineConsumesInitialHeadingOnlyOnce();
+  testGameRotationRestartUsesExplicitCameraBearing();
   testEngineNeverFallsBackWhileAwaitingGameRotationVector();
   testHorizontalYawDirectionIsReversedWithoutFullConjugation();
   testLandscapePitchAxisIsNotConjugated();
