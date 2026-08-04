@@ -1,6 +1,7 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-const APP_VARIANT = (globalThis as any).process?.env?.APP_VARIANT ?? 'development';
+const APP_VARIANT =
+  (globalThis as any).process?.env?.APP_VARIANT ?? 'development';
 
 // Atlas:
 // const BASE_NAME = 'ATLAS';
@@ -27,7 +28,7 @@ const variant =
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: variant.name,
-  slug: config.slug ?? "cumquat-orientation",
+  slug: config.slug ?? 'cumquat-orientation',
   android: {
     ...config.android,
     package: `${BASE_ID}${variant.suffix}`,

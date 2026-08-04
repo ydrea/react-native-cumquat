@@ -1,5 +1,5 @@
-import * as Updates from "expo-updates";
-import { Button, Text, View } from "react-native";
+import * as Updates from 'expo-updates';
+import { Button, Text, View } from 'react-native';
 
 export function UpdatePanel() {
   const {
@@ -31,25 +31,21 @@ export function UpdatePanel() {
 
   return (
     <View>
-      <Text>Channel: {currentlyRunning.channel ?? "development/local"}</Text>
+      <Text>Channel: {currentlyRunning.channel ?? 'development/local'}</Text>
+
+      <Text>Runtime: {currentlyRunning.runtimeVersion ?? 'unavailable'}</Text>
 
       <Text>
-        Runtime: {currentlyRunning.runtimeVersion ?? "unavailable"}
+        Source:{' '}
+        {currentlyRunning.isEmbeddedLaunch ? 'embedded build' : 'EAS update'}
       </Text>
 
       <Text>
-        Source:{" "}
-        {currentlyRunning.isEmbeddedLaunch
-          ? "embedded build"
-          : "EAS update"}
-      </Text>
-
-      <Text>
-        Update ID: {currentlyRunning.updateId?.slice(0, 8) ?? "embedded"}
+        Update ID: {currentlyRunning.updateId?.slice(0, 8) ?? 'embedded'}
       </Text>
 
       <Button
-        title={isChecking ? "Checking…" : "Check for update"}
+        title={isChecking ? 'Checking…' : 'Check for update'}
         disabled={isChecking || !Updates.isEnabled}
         onPress={checkForUpdate}
       />
@@ -59,7 +55,7 @@ export function UpdatePanel() {
           title={
             isDownloading
               ? `Downloading ${Math.round((downloadProgress ?? 0) * 100)}%`
-              : "Download update"
+              : 'Download update'
           }
           disabled={isDownloading}
           onPress={downloadUpdate}

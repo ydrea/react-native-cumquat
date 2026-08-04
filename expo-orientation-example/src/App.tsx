@@ -34,7 +34,7 @@ export default function App() {
     <ScrollView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#07101e" />
       <View style={styles.header}>
-      <UpdatePanel/>
+        <UpdatePanel />
         <View>
           <Text style={styles.eyebrow}>REACT-NATIVE-CUMQUAT</Text>
           <Text style={styles.title}>Orientation</Text>
