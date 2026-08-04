@@ -2,21 +2,26 @@
   "expo": {
     "name": "Cumquat Orientation",
     "slug": "cumquat-orientation",
-    "version": "0.1.0",
+    "version": "0.1.8",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "android": {
-      "package": "com.ydrea.cumquatorientation"
+      "package": "com.ydrea.cumquatorientation.dev"
     },
     "ios": {
-      "bundleIdentifier": "com.ydrea.cumquatorientation"
+      "bundleIdentifier": "com.ydrea.cumquatorientation.dev"
     },
     "extra": {
       "eas": {
         "projectId": "0fd138c3-af33-451c-a28c-6fd747e511bf"
       }
     },
-    "owner": "ydrea"
+    "owner": "ydrea",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0fd138c3-af33-451c-a28c-6fd747e511bf"
+    }
   }
 }

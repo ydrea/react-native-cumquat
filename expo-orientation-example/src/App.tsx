@@ -12,6 +12,7 @@ import {
 import { PhoneScene } from './PhoneScene';
 import { cameraBearing } from './orientationMath';
 import { useCumquatOrientation } from './useCumquatOrientation';
+import { UpdatePanel } from './UpdatePanel';
 
 function number(value: number | undefined) {
   return value === undefined ? '—' : value.toFixed(5);
@@ -33,6 +34,7 @@ export default function App() {
     <ScrollView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#07101e" />
       <View style={styles.header}>
+      <UpdatePanel/>
         <View>
           <Text style={styles.eyebrow}>REACT-NATIVE-CUMQUAT</Text>
           <Text style={styles.title}>Orientation</Text>
