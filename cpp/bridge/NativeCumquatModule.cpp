@@ -326,17 +326,17 @@ double NativeCumquatModule::update(
   }
 
 #ifdef __ANDROID__
-  // Pair Android's absolute and game rotation vectors inside the native sensor
-  // once. The returned quaternion is Earth-from-device, while all subsequent
-  // motion comes only from the non-magnetic game vector.
+  // Expo DeviceMotion uses Android's normal rotation vector, which may contain
+  // continuous geomagnetic corrections. Use the non-magnetic game vector as
+  // the motion source, pair it once with initialHeadingDegrees in Engine, and
+  // never let a later compass update steer projection.
   sensorState.hasOrientationQuaternion = false;
   sensorState.usesGameRotationVector = true;
 
-  cumquat::Quaternion earthFromDevice;
-  if (gameRotationSensor_.latest(earthFromDevice)) {
-    sensorState.orientation = earthFromDevice;
+  cumquat::Quaternion gameOrientation;
+  if (gameRotationSensor_.latest(gameOrientation)) {
+    sensorState.orientation = gameOrientation;
     sensorState.hasOrientationQuaternion = true;
-    sensorState.orientationIsEarthFromDevice = true;
   }
 #endif
 
