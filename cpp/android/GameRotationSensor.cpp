@@ -26,18 +26,18 @@ namespace cumquat::android
           static_cast<double>(event.data[0]),
           static_cast<double>(event.data[1]),
           static_cast<double>(event.data[2]),
-          static_cast<double>(event.data[3]),
+          0.0,
       };
 
-      if (!std::isfinite(orientation.w))
-      {
-        const double vectorLengthSquared =
-            orientation.x * orientation.x +
-            orientation.y * orientation.y +
-            orientation.z * orientation.z;
-        orientation.w =
-            std::sqrt(std::max(0.0, 1.0 - vectorLengthSquared));
-      }
+      // Android's scalar component is optional. Older devices such as the
+      // Galaxy S7 can leave event.data[3] at zero even when the true scalar is
+      // not zero, so derive it from the mandated vector components.
+      const double vectorLengthSquared =
+          orientation.x * orientation.x +
+          orientation.y * orientation.y +
+          orientation.z * orientation.z;
+      orientation.w =
+          std::sqrt(std::max(0.0, 1.0 - vectorLengthSquared));
 
       return normalizedQuaternion(orientation);
     }
