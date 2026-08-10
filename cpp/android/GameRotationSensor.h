@@ -15,10 +15,9 @@ class GameRotationSensor {
   GameRotationSensor& operator=(const GameRotationSensor&) = delete;
 
   /**
-   * Returns an Earth-from-device quaternion. During startup the Android
-   * absolute rotation vector is paired with the game rotation vector; after
-   * that frozen alignment, updates are driven only by the non-magnetic game
-   * rotation vector.
+   * Returns Android's current TYPE_GAME_ROTATION_VECTOR quaternion. This
+   * sensor deliberately has no geographic north; Engine pairs its first usable
+   * sample with initialHeadingDegrees and freezes that reference.
    */
   bool latest(Quaternion& orientation) const;
   bool isAvailable() const;
