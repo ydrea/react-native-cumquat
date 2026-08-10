@@ -1,6 +1,7 @@
 import NativeCumquat from './NativeCumquat';
 
 export { CumquatEngine } from './CumquatEngine';
+export { cameraBearingFromDeviceHeading } from './orientation';
 
 export function getCumquatNativeVersion(): string {
   return NativeCumquat.getVersion();
