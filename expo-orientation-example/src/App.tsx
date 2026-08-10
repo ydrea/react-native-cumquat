@@ -34,7 +34,6 @@ export default function App() {
     <ScrollView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#07101e" />
       <View style={styles.header}>
-        <UpdatePanel />
         <View>
           <Text style={styles.eyebrow}>REACT-NATIVE-CUMQUAT</Text>
           <Text style={styles.title}>Orientation</Text>
@@ -113,6 +112,10 @@ export default function App() {
           </Text>
         )}
         {state.error && <Text style={styles.error}>{state.error}</Text>}
+
+        <View style={styles.updateSection}>
+          <UpdatePanel />
+        </View>
       </View>
     </ScrollView>
   );
@@ -240,6 +243,12 @@ const styles = StyleSheet.create({
   },
   metaLabel: { color: '#71839f', fontSize: 12 },
   metaValue: { color: '#c8d4e7', fontSize: 12, fontVariant: ['tabular-nums'] },
+  updateSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#182b45',
+  },
   warning: { color: '#b6a7da', fontSize: 11, lineHeight: 16, marginTop: 2 },
   error: { color: '#ff8b98', fontSize: 11, lineHeight: 16, marginTop: 2 },
 });
