@@ -1,7 +1,7 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const APP_VARIANT =
-  (globalThis as any).process?.env?.APP_VARIANT ?? 'development';
+  process.env.APP_VARIANT ?? process.env.EAS_BUILD_PROFILE ?? 'development';
 
 // Atlas:
 // const BASE_NAME = 'ATLAS';
@@ -15,10 +15,17 @@ const variants = {
   development: {
     name: `${BASE_NAME} (Dev)`,
     suffix: '.dev',
+    scheme: 'cumquatorientation-dev',
   },
   preview: {
     name: `${BASE_NAME} (Preview)`,
     suffix: '.preview',
+    scheme: 'cumquatorientation-preview',
+  },
+  production: {
+    name: BASE_NAME,
+    suffix: '',
+    scheme: 'cumquatorientation',
   },
 } as const;
 
@@ -29,6 +36,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: variant.name,
   slug: config.slug ?? 'cumquat-orientation',
+  scheme: variant.scheme,
   android: {
     ...config.android,
     package: `${BASE_ID}${variant.suffix}`,
